@@ -11,7 +11,8 @@ BOWL_CENTER = np.array([WIDTH / 2, HEIGHT / 2], dtype=float)
 BOWL_RADIUS = 300
 
 # Start with 1 ball, then 2. Many at once is the bonus.
-NUM_PARTICLES = 1
+NUM_PARTICLES = 100
+
 PARTICLE_RADIUS = 12
 PARTICLE_SPEED = 150.0
 
@@ -93,6 +94,31 @@ while running:
     ###########################################################################
     
     # CODE STARTS HERE.
+    # The Physics behind the simulation is newtons laws of motion which we will be simulating.
+    for i in range(len(positions)):
+        # Apply gravity to the velocity (y-axis only) ( [1] shows y component)
+        velocities[i][1] = velocities[i][1] + GRAVITY * dt
+        # Updating position using new velocity , Newtons equations 
+        positions[i] = positions[i] + velocities[i] * dt
+
+         #velocities[i][1] = velocities[i][1] + GRAVITY * dt  # writing velocity after position increses the speed of the ball as time passes 
+
+        # Checkfor wall collision
+        offset = positions[i] - BOWL_CENTER
+        distance = np.linalg.norm(offset)
+
+        # The maximum allowed distance 
+        max_distance = BOWL_RADIUS - PARTICLE_RADIUS
+
+        if distance > max_distance:
+            
+            normal_outward_direction = offset / distance
+            positions[i] = BOWL_CENTER + normal_outward_direction * max_distance
+            normal_inward_direction = -normal_outward_direction #This might not needed but i used to track the vector direction
+
+            # Reflect the velocity (as told in Readme file)
+            new_velocity = np.dot(velocities[i], normal_inward_direction)
+            velocities[i] = velocities[i] - (1 + WALL_RESTITUTION) * new_velocity* normal_inward_direction
 
     pass
 
@@ -121,6 +147,26 @@ while running:
     ###########################################################################
 
     # CODE STARTS HERE.
+    for i in range(len(positions)):
+        for j in range(i + 1, len(positions)):
+            # finding normal vector between the balls
+            normal = positions[i] - positions[j]
+            distance = np.linalg.norm(normal)
+            normal_direction = normal / distance
+
+            # Finding relative velocity between balls
+            relative_velocity = velocities[i] - velocities[j]
+            velocity_along_normal = np.dot(relative_velocity , normal_direction)
+
+            # The component if velocity that do not change ( its perpendicular to the line joining the two balls)
+            tangent_direction = np.array([-normal_direction[1] , normal_direction[0]])
+
+            if distance <= 2 * PARTICLE_RADIUS and velocity_along_normal < 0:
+             #print("Collision detected")  #This can be used to detect that is the 'if' statmenet is working and colllision occuring or not 
+                # writing final velocities after collision for each ball -- final velocity in x and in y 
+
+                velocities [i] = ( (((RESTITUTION - 1) * np.dot(velocities[i] ,normal_direction) * normal_direction + (1+RESTITUTION) * np.dot(velocities[j] , normal_direction) * normal_direction)/2) + np.dot(velocities[i] , tangent_direction) * tangent_direction )
+                velocities[j] = ( (((RESTITUTION - 1) * np.dot(velocities[j] , normal_direction) * normal_direction + (1+RESTITUTION) * np.dot(velocities[i] , normal_direction) * normal_direction) / 2) + np.dot(velocities[j] , tangent_direction) * tangent_direction )
 
     pass
 
